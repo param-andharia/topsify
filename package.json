@@ -1,0 +1,23 @@
+{
+  "name": "music-streaming-service-revamp",
+  "private": true,
+  "version": "2.0.0",
+  "description": "React + Express + PostgreSQL revamp of the music streaming service",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -k \"npm run dev --workspace backend\" \"npm run dev --workspace frontend\"",
+    "dev:backend": "npm run dev --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "start": "npm run start --workspace backend",
+    "db:schema": "psql \"$DATABASE_URL\" -f backend/db/migrations/001_init_schema.sql",
+    "db:legacy": "psql \"$DATABASE_URL\" -f backend/db/migrations/002_legacy_fdw_migration.sql"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
+
