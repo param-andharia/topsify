@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_URL?.trim() || "";
 
 const parseResponseBody = async (response) => {
   const text = await response.text();

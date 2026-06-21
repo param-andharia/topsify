@@ -16,7 +16,7 @@ export const env = {
   port: Number.parseInt(process.env.PORT ?? "3000", 10),
   databaseUrl: process.env.DATABASE_URL ?? "",
   sessionSecret: process.env.SESSION_SECRET ?? "development-session-secret",
-  frontendOrigin: process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
+  frontendOrigin: process.env.FRONTEND_ORIGIN?.trim() ?? "",
   sessionTableName: process.env.SESSION_TABLE_NAME ?? "user_sessions",
   sessionMaxAgeMs: Number.parseInt(process.env.SESSION_MAX_AGE_MS ?? String(oneDayInMs), 10),
 };

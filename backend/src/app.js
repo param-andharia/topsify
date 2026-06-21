@@ -16,13 +16,25 @@ const frontendDistPath = path.join(workspaceRoot, "frontend", "dist");
 
 export const createApp = () => {
   const app = express();
+  const allowedOrigins = env.frontendOrigin
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
-  app.use(
-    cors({
-      origin: env.frontendOrigin,
-      credentials: true,
-    })
-  );
+  if (allowedOrigins.length > 0) {
+    app.use(
+      cors({
+        origin(origin, callback) {
+          if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+          }
+
+          return callback(new Error("Origin not allowed by CORS"));
+        },
+        credentials: true,
+      })
+    );
+  }
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
