@@ -16,6 +16,11 @@ const frontendDistPath = path.join(workspaceRoot, "frontend", "dist");
 
 export const createApp = () => {
   const app = express();
+   if (env.nodeEnv === "production") {
+    // Render terminates TLS at the proxy, so Express must trust it
+    // before secure session cookies will be issued correctly.
+    app.set("trust proxy", 1);
+  }
   const allowedOrigins = env.frontendOrigin
     .split(",")
     .map((origin) => origin.trim())
