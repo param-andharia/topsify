@@ -5,6 +5,15 @@ const songQueryClause = `
   ${songArtistJoinSql}
 `;
 
+const buildSearchRankSql = (columnSql, queryParamIndex = 1) => `
+  CASE
+    WHEN LOWER(${columnSql}) = LOWER($${queryParamIndex}) THEN 0
+    WHEN LOWER(${columnSql}) LIKE LOWER($${queryParamIndex}) || '%' THEN 1
+    WHEN POSITION(LOWER($${queryParamIndex}) IN LOWER(${columnSql})) > 0 THEN 2
+    ELSE 3
+  END
+`;
+
 const userCreatedPlaylistWhereClause = `
   p.is_public = true
   AND p.creator_id IS NOT NULL
@@ -22,7 +31,13 @@ export const searchSongs = async (executor, queryText, limit, offset = 0, viewer
       WHERE s.track_name ILIKE '%' || $1 || '%'
          OR s.album_name ILIKE '%' || $1 || '%'
       GROUP BY s.track_id
-      ORDER BY GREATEST(similarity(s.track_name, $1), similarity(COALESCE(s.album_name, ''), $1)) DESC, s.track_name ASC
+      ORDER BY
+        LEAST(
+          ${buildSearchRankSql("s.track_name")},
+          ${buildSearchRankSql("COALESCE(s.album_name, '')")}
+        ) ASC,
+        CHAR_LENGTH(s.track_name) ASC,
+        s.track_name ASC
       LIMIT $2
       OFFSET $3
     `,
@@ -58,7 +73,7 @@ export const searchArtists = async (executor, queryText, limit, offset = 0) => {
       LEFT JOIN song_artists sa ON sa.artist_id = a.artist_id
       WHERE a.artist_name ILIKE '%' || $1 || '%'
       GROUP BY a.artist_id
-      ORDER BY similarity(a.artist_name, $1) DESC, a.artist_name ASC
+      ORDER BY ${buildSearchRankSql("a.artist_name")} ASC, CHAR_LENGTH(a.artist_name) ASC, a.artist_name ASC
       LIMIT $2
       OFFSET $3
     `,
@@ -93,7 +108,7 @@ export const searchAlbums = async (executor, queryText, limit, offset = 0) => {
       WHERE s.album_name IS NOT NULL
         AND s.album_name ILIKE '%' || $1 || '%'
       GROUP BY s.album_name
-      ORDER BY similarity(s.album_name, $1) DESC, COUNT(*) DESC, s.album_name ASC
+      ORDER BY ${buildSearchRankSql("s.album_name")} ASC, COUNT(*) DESC, CHAR_LENGTH(s.album_name) ASC, s.album_name ASC
       LIMIT $2
       OFFSET $3
     `,
@@ -136,7 +151,7 @@ export const searchPlaylists = async (executor, queryText, limit, offset = 0) =>
       LEFT JOIN users u ON u.user_id = p.creator_id
       WHERE ${userCreatedPlaylistWhereClause}
         AND p.playlist_name ILIKE '%' || $1 || '%'
-      ORDER BY similarity(p.playlist_name, $1) DESC, p.followers_count DESC, p.playlist_name ASC
+      ORDER BY ${buildSearchRankSql("p.playlist_name")} ASC, p.followers_count DESC, CHAR_LENGTH(p.playlist_name) ASC, p.playlist_name ASC
       LIMIT $2
       OFFSET $3
     `,
@@ -169,7 +184,7 @@ export const searchUsers = async (executor, queryText, limit, offset = 0) => {
         u.profile_image_url AS "profileImageUrl"
       FROM users u
       WHERE u.username ILIKE '%' || $1 || '%'
-      ORDER BY similarity(u.username, $1) DESC, u.username ASC
+      ORDER BY ${buildSearchRankSql("u.username")} ASC, CHAR_LENGTH(u.username) ASC, u.username ASC
       LIMIT $2
       OFFSET $3
     `,
